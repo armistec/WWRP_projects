@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style> 
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+.grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.7;
+  shape-rendering: crispEdges;
+}
+
+.grid path {
+  stroke-width: 0;
+}
+</style>
+<body> 
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+///------> Setup <-----/////
+// set the dimensions and margins of the graph
+var margin = {top: 40, right: 100, bottom: 60, left: 300},
+    width = 1200 - margin.left - margin.right, //960
+    height = 600 - margin.top - margin.bottom;
+
+// set the ranges
+var y = d3.scaleBand()
+          .range([height, 0])
+          .padding(0.12);
+
+var x = d3.scaleLinear()
+          .range([0, width]);
+
+var z = d3.scaleOrdinal(d3["schemeCategory20"]);
+
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.Height); })
+
+// define gridlines in x axis function
+function make_x_gridlines() {		
+    return d3.axisBottom(x)
+        .ticks(10)
+}
+
+
+          
+///------> Setup (end) <-----/////   
+
+// Initialize first chart
+var bar1 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right + 100)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// Read in data          
+d3.csv("d3_data.csv", function(error, data) {
+  if(error) throw error;
+
+  data.forEach(function(d){
+    var number = Number(d.WWRPfunding.replace(/[^0-9\.-]+/g,""))
+    d.WWRPfunding = number;
+
+  })
+  console.log(data)	
+  
+  data.sort(function(a, b) {
+        return d3.ascending(a.WWRPfunding, b.WWRPfunding)
+      });
+  
+  // Scale the range of the data in the domains
+  x.domain([0, d3.max(data, function(d){ return d.WWRPfunding; })])
+  y.domain(data.map(function(d) { return d.ProjectName; }));
+  console.log(data.WWRPfunding)  
+
+  // append the rectangles for the bar chart
+  bar1.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("width", function(d) {return x(d.WWRPfunding); } )
+      .attr("y", function(d) { return y(d.ProjectName); })
+      .attr("height", y.bandwidth())
+      .attr("fill", function(d) { return z(d.ProjectGroup); }); 
+      
+
+  // add the x Axis
+  bar1.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+      
+  bar1.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top - 5) + ")")
+      .style("text-anchor", "middle")
+      .text("Project Funding (USD)");
+
+  // add the y Axis
+  bar1.append("g")
+      .call(d3.axisLeft(y));
+      
+  bar1.append("text")
+  	  .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (-10) + ")")
+      .style("text-anchor", "middle")
+      .text("Project Funding by WWRP Group");
+      
+    //Grid Line 
+    bar1.append("g")			
+      .attr("class", "grid")
+      .attr("transform", "translate(0," + height + ")")
+      .call(make_x_gridlines()
+          .tickSize(-height)
+          .tickFormat("")
+      )
+
+// add legend
+var legend = bar1.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "end")
+    .selectAll("g")
+    .data(d3.map(data, function(d){return d.ProjectGroup;}).keys())
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width + 180) //19
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", z);
+
+  legend.append("text")
+      .attr("x", width + 170) 
+      .attr("y", 9.5)
+      .attr("dy", "0.32em")
+      .text(function(d) { return d; });
+
+
+    
+});
+// 
+// // Second Bar Chart
+// var bar2 = d3.select("body").append("svg")
+//     .attr("width", width + margin.left + margin.right + 40)
+//     .attr("height", height + margin.top + margin.bottom)
+//   .append("g")
+//     .attr("transform", 
+//           "translate(" + margin.left + "," + margin.top + ")");
+//           
+// // read in data          
+// 
+// d3.csv("StudentNameHeightEye.csv", function(error, data) {
+//   if(error) throw error;
+// 
+//   data.forEach(function(d){
+//     d.Height = +d.Height
+//   })
+//   console.log(data)	
+//   
+//     data.sort(function(a, b) {
+//         return d3.ascending(a.Height, b.Height)
+//       });
+//   
+//   // Scale the range of the data in the domains
+//   x.domain([0, d3.max(data, function(d){ return d.Height; })])
+//   y.domain(data.map(function(d) { return d.Name; }));
+//   console.log(data.Height)  
+// 
+//   // append the rectangles for the bar chart
+//   bar2.selectAll(".bar")
+//       .data(data)
+//     .enter().append("rect")
+//       .attr("class", "bar")
+//       .attr("width", function(d) {return x(d.Height); } )
+//       .attr("y", function(d) { return y(d.Name); })
+//       .attr("height", y.bandwidth())
+//       .attr("fill", function(d) { return z(d["Eye Color"]); }); 
+//       
+// 
+//   // add the x Axis
+//   bar2.append("g")
+//       .attr("transform", "translate(0," + height + ")")
+//       .call(d3.axisBottom(x));
+// 
+//   bar2.append("text")             
+//       .attr("transform",
+//             "translate(" + (width/2) + " ," + 
+//                            (height + margin.top - 5) + ")")
+//       .style("text-anchor", "middle")
+//       .text("Height (cm)");
+// 
+//   bar2.append("text")
+//   	  .attr("transform",
+//             "translate(" + (width/2) + " ," + 
+//                            (-10) + ")")
+//       .style("text-anchor", "middle")
+//       .text("MSiA Students by Height");
+// 
+//   // add the y Axis
+//   bar2.append("g")
+//       .call(d3.axisLeft(y));
+//   
+//   
+//   //Grid Line 
+//     bar2.append("g")			
+//       .attr("class", "grid")
+//       .attr("transform", "translate(0," + height + ")")
+//       .call(make_x_gridlines()
+//           .tickSize(-height)
+//           .tickFormat("")
+//       )
+//   
+//   // add legend   
+// 	var legend2 = bar2.append("g")
+//       .attr("font-family", "sans-serif")
+//       .attr("font-size", 10)
+//       .attr("text-anchor", "end")
+//     .selectAll("g")
+//     .data(d3.map(data, function(d){return d["Eye Color"];}).keys())
+//     .enter().append("g")
+//       .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+// 
+//   legend2.append("rect")
+//       .attr("x", width + 60)
+//       .attr("width", 19)
+//       .attr("height", 19)
+//       .attr("fill", z);
+// 
+//   legend2.append("text")
+//       .attr("x", width + 60 - 5) 
+//       .attr("y", 9.5)
+//       .attr("dy", "0.32em")
+//       .text(function(d) { return d; });      
+// 
+// });
+
+
+</script>
+</body>
